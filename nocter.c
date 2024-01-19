@@ -88,9 +88,7 @@ void strcast(Value *val) {
     char *data;
     if (val->obj == null) data = "void";
     else if (val->obj == &integrate) {
-        if (isnan(*(long *)val->data)) data = "nan";
-        else if (isinf(*(long *)val->data)) data = *(long *)val->data > 0 ? "infinity" : "-infinity";
-        else if (*(long *)val->data == 0) data = "0";
+        if (*(long *)val->data == 0) data = "0";
         else {
             long num = *(long *)val->data;
             char str[19], *p = str + 18, minus = 0;
@@ -251,7 +249,7 @@ Value ex_value(char **code, Value self) {
     else if (**code == VOID) res.obj = null, (*code) ++;
     else if (**code == ANY) res.obj = any, (*code) ++;
     else if (**code == SELF) {
-        res = self;
+        (*code) ++, res = self;
         if (**code == ASSIGNMENT) (*code) ++, ex_free(res), res.data = ex_expr(code, self).data;
         res = valdup(res);
     }
@@ -290,6 +288,8 @@ Value ex_value(char **code, Value self) {
         else if (res.obj == &number) *(double *)res.data = -*(double *)res.data;
     }
     else if (**code == NOT) (*code) ++, res = ex_value(code, self), *(char *)res.data = !*(char *)res.data;
+    else res.obj = null;
+
     return res;
 }
 
@@ -299,7 +299,7 @@ Value ex_value_1(char **code, Value self) {
         if (**code == PERIOD) {
             (*code) ++, self = res;
             Key *ptr = self.obj->list;
-            while (ptr != vars.set) {
+            while (ptr != self.obj->set) {
                 if(strcmp(*code, ptr->id) == 0) break;
                 else ptr --;
             }
@@ -309,11 +309,11 @@ Value ex_value_1(char **code, Value self) {
             res = valdup(res);
         }
         else if (**code == GROUP) {
-            char *fn = res.obj == &function ? res.data : res.obj->set[0].val.data;
-            Object *cls = res.obj == &function ? NULL : res.data;
+            char *fn = res.obj == &function ? res.data : res.obj->set->val.data;
             if (*fn == '@') {
                 Value arg[64], *ptr = arg;
-                while (*(*code) ++ != GROUP_E) *ptr ++ = ex_expr(code, self);
+                if (*++ (*code) == GROUP_E) (*code) ++;
+                else do *ptr ++ = ex_expr(code, self); while (*(*code) ++ != GROUP_E);
                 switch (fn[1]) {
                     case 0: switch (fn[2]) {
                         case 1: // puts
@@ -336,13 +336,19 @@ Value ex_value_1(char **code, Value self) {
                 do ex_free(*ptr), ptr --; while (ptr != arg);
             }
             else  {
+                int cls = 0;
+                if (res.obj != &function) self = (Value){res.data}, cls = 1;
+
                 Log log[256], *logp = log;
-                ex_start_scope(&vars, &logp);
-                while (*++fn != FUNCTION_E) {
-                    (*code) ++, vars.list ++, vars.list->id = fn, vars.list->val = ex_expr(code, self);
-                    while (*++fn != 0);
+                ex_start_scope(&vars, &logp), fn ++;
+                if (*++ (*code) == GROUP_E) (*code) ++;
+                else do {
+                    vars.list ++, vars.list->id = fn, vars.list->val = ex_expr(code, self);
+                    while (*fn ++ != 0);
                 }
-                (*code) ++, fn ++;
+                while (*(*code) ++ != GROUP_E);
+                fn ++;
+
                 if (*fn == BLOCK) {
                     char md = 0;
                     fn ++;
@@ -354,7 +360,8 @@ Value ex_value_1(char **code, Value self) {
                 }
                 else res = ex_inexpr(&fn, self);
                 ex_end_scope(&vars, log);
-                if (cls != NULL) res = (Value){cls};
+
+                if (cls) res = self;
             }
         }
         else break;
@@ -520,12 +527,10 @@ Value ex_expr(char **code, Value self) {
  * 2 continue
  * 3 break
  * 4 class
+ * 5 static
  */
 Value ex_code(char **code, Value self, char *md) {
     Value res;
-
-    char stc = 0;
-    if (**code == STATIC) (*code) ++, stc = 1;
 
     if (**code == '{') {
         Log log[256], *logp = log;
@@ -538,23 +543,28 @@ Value ex_code(char **code, Value self, char *md) {
     }
     else if (**code == VAR) {
         Object *obj;
-        if (md == 2) obj = self.data, self = (Value){obj};
-        else if (md == 3) obj = self.obj;
+        if (*md == 4) obj = self.data, self = (Value){obj};
+        else if (*md == 5) obj = self.obj;
         else obj = &vars;
 
         (*code) ++;
         while (**code != EOL) {
-            vars.list ++, vars.list->id = *code;
+            obj->list ++, obj->list->id = *code;
             while (*(*code) ++ != 0);
-            if (**code == ASSIGNMENT) (*code) ++, vars.list->val = ex_expr(code, self);
-            else vars.list->val.obj = null;
+            if (**code == ASSIGNMENT) (*code) ++, obj->list->val = ex_expr(code, self);
+            else obj->list->val.obj = null;
         }
         (*code) ++;
     }
     else if (**code == FUNC) {
-        (*code) ++, vars.list ++, vars.list->id = *code;
+        Object *obj;
+        if (*md == 4) obj = self.data, self = (Value){obj};
+        else if (*md == 5) obj = self.obj;
+        else obj = &vars;
+
+        (*code) ++, obj->list ++, obj->list->id = *code;
         while (*(*code) ++ != 0);
-        vars.list->val.obj = &function, vars.list->val.data = *code;
+        obj->list->val.obj = &function, obj->list->val.data = *code;
         while (*(*code) ++ != FUNCTION_E);
         if (**code == BLOCK) {
             (*code) ++;
@@ -568,13 +578,52 @@ Value ex_code(char **code, Value self, char *md) {
         (*code) ++;
     }
     else if (**code == CLASS) {
+        Object *obj;
+        if (*md == 4) obj = self.data, self = (Value){obj};
+        else if (*md == 5) obj = self.obj;
+        else obj = &vars;
+
         Object *stc = malloc(sizeof(Object)), *newobj = malloc(sizeof(Object));
         stc->list = stc->set, stc->list->id = (char *)1, stc->list->val.data = (char [4]){FUNCTION, FUNCTION_E, BLOCK, BLOCK_E}, newobj->list = newobj->set;
 
-        (*code) ++, vars.list ++, vars.list->id = *code, vars.list->val = (Value){stc, newobj};
+        (*code) ++, obj->list ++, obj->list->id = *code, obj->list->val = (Value){stc, newobj};
         while (*(*code) ++ != 0);
         (*code) ++;
-        while (**code != BLOCK_E) ex_code(code, vars.list->val, md);
+        char clmd = 4;
+        while (**code != BLOCK_E) ex_code(code, obj->list->val, &clmd);
+        (*code) ++;
+    }
+    else if (**code == STATIC) {
+        char stcmd = 5;
+        (*code) ++, ex_code(code, self, &stcmd);
+    }
+    else if (**code == INIT) {
+        (*code) ++, self.obj->set->val.data = *code;
+        while (*(*code) ++ != FUNCTION_E);
+        if (**code == BLOCK) {
+            (*code) ++;
+            while (**code != BLOCK_E) skip_code(code);
+            (*code) ++;
+        }
+        else {
+            do skip_expr(code);
+            while (*(*code) ++ == COMMA);
+        }
+        (*code) ++;
+    }
+    else if (**code == EXTEND) {
+        Object *obj;
+        if (*md == 4) obj = self.data, self = (Value){obj};
+        else if (*md == 5) obj = self.obj;
+        else obj = &vars;
+
+        Key *list = obj->list;
+        (*code) ++;
+        while (strcmp(*code, list->id) != 0) list --;
+        while (*(*code) ++ != 0);
+        (*code) ++;
+        char clmd = 4;
+        while (**code != BLOCK_E) ex_code(code, list->val, &clmd);
         (*code) ++;
     }
 
@@ -937,7 +986,7 @@ Value ch_value(char **ptr, char **code, char *file, Value self) {
         else if (**ptr == '(') {
             Value *param;
             if (res.obj == &function) {
-                if (!typecmp(*(Value *)res.data, self)) error(file, *ptr, "SyntaxError: self", 1);
+                if (((Value *)res.data)->obj != any && !typecmp(*(Value *)res.data, self)) error(file, *ptr, "SyntaxError: self", 1);
                 param = (Value *)res.data + 2, res = *((Value *)res.data + 1);
             }
             else if (res.obj != null && res.obj != any ? res.obj->set->id == (char *)1 : 0) param = (Value *)res.obj->set->val.data, res = (Value){res.data};
@@ -1369,7 +1418,7 @@ int main(int argc, char **argv) {
 
     FILE *fp = fopen(argv[1], "r");
     if (fp == NULL) {
-        puts("error no input file");
+        puts("error: file not found");
         return EXIT_FAILURE;
     }
 
@@ -1418,7 +1467,7 @@ int main(int argc, char **argv) {
     vars.list ++, vars.list->id = "Int", vars.list->val.obj = &integrate_stc, vars.list->val.data = &integrate;
     vars.list ++, vars.list->id = "Boolean", vars.list->val.obj = &boolean_stc, vars.list->val.data = &boolean;
     vars.list ++, vars.list->id = "Function", vars.list->val.obj = &function_stc, vars.list->val.data = &function;
-    vars.list ++, vars.list->id = "puts", vars.list->val = (Value){&function, (Value [4]){{null}, {null}, {&string}, {undefined}}};
+    vars.list ++, vars.list->id = "puts", vars.list->val = (Value){&function, (Value [4]){{any}, {null}, {&string}, {undefined}}};
 
 
 

@@ -1,5 +1,5 @@
 tasks:
   - name: set up environment
     command: |
-      code --install-extension ./nocter-0.0.1.vsix
+      code --install-extension ./bin/nocter-0.0.1.vsix
       export PATH=$PATH:./bin

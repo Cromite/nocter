@@ -1,4 +1,4 @@
 tasks:
   - name: Install custom VS Code extension
     command: |
-      code --install-extension ./path/to/your-extension.vsix
+      code --install-extension ./nocter-0.0.1.vsix

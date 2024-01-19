@@ -152,7 +152,7 @@ void boolcast(Value *val) {
     char data;
     if (val->obj == null) data = 0;
     else if (val->obj == &string) data = !is_false((char *)val->data) && *(char *)val->data != 0, free(val->data);
-    else if (val->obj == &integrate) data = isnan(*(long *)val->data) ? 0 : isinf(*(long *)val->data) ? 1 : *(long *)val->data != 0, free(val->data);
+    else if (val->obj == &integrate) data = *(long *)val->data != 0, free(val->data);
     else if (val->obj == &number) data = isnan(*(double *)val->data) ? 0 : isinf(*(double *)val->data) ? 1 : *(double *)val->data != 0, free(val->data);
     else data = 1;
 
@@ -369,27 +369,27 @@ Value ex_value_1(char **code, Value self) {
     return res;
 }
 
-Value ex_value_2(char **code, Value self) {
-    Value res = ex_value_1(code, self);
-    if (**code == EXPONENTIATION) {
-        (*code) ++;
-        Value val = ex_value_2(code, self);
-        if (res.obj == &integrate && val.obj == &integrate) *(long *)res.data = pow(*(long *)res.data, *(long *)val.data);
-        else {
-            double l = res.obj == &number ? *(double *)res.data : *(long *)res.data, r = val.obj == &number ? *(double *)val.data : *(long *)val.data;
-            res.obj = &number, free(res.data), res.data = malloc(sizeof(double *)), *(double *)res.data = pow(l, r);
-        }
-        free(val.data);
-    }
-    return res;
-}
+// Value ex_value_2(char **code, Value self) {
+//     Value res = ex_value_1(code, self);
+//     if (**code == EXPONENTIATION) {
+//         (*code) ++;
+//         Value val = ex_value_2(code, self);
+//         if (res.obj == &integrate && val.obj == &integrate) *(long *)res.data = pow(*(long *)res.data, *(long *)val.data);
+//         else {
+//             double l = res.obj == &number ? *(double *)res.data : *(long *)res.data, r = val.obj == &number ? *(double *)val.data : *(long *)val.data;
+//             res.obj = &number, free(res.data), res.data = malloc(sizeof(double *)), *(double *)res.data = pow(l, r);
+//         }
+//         free(val.data);
+//     }
+//     return res;
+// }
 
 Value ex_value_3(char **code, Value self) {
-    Value res = ex_value_2(code, self);
+    Value res = ex_value_1(code, self);
     for (;;) {
         if (**code == MULTIPLICATION) {
             (*code) ++;
-            Value val = ex_value_2(code, self);
+            Value val = ex_value_1(code, self);
             if (res.obj == &integrate && val.obj == &integrate) *(long *)res.data = *(long *)res.data * *(long *)val.data;
             else {
                 double l = res.obj == &number ? *(double *)res.data : *(long *)res.data, r = val.obj == &number ? *(double *)val.data : *(long *)val.data;
@@ -399,13 +399,13 @@ Value ex_value_3(char **code, Value self) {
         }
         else if (**code == DIVISION) {
             (*code) ++;
-            Value val = ex_value_2(code, self);
+            Value val = ex_value_1(code, self);
             double l = res.obj == &number ? *(double *)res.data : *(long *)res.data, r = val.obj == &number ? *(double *)val.data : *(long *)val.data;
             res.obj = &number, free(res.data), res.data = malloc(sizeof(double *)), *(double *)res.data = l / r, free(val.data);
         }
         else if (**code == REMAINDER) {
             (*code) ++;
-            Value val = ex_value_2(code, self);
+            Value val = ex_value_1(code, self);
             double l = res.obj == &number ? *(double *)res.data : *(long *)res.data, r = val.obj == &number ? *(double *)val.data : *(long *)val.data;
             res.obj = &number, free(res.data), res.data = malloc(sizeof(double *)), *(double *)res.data = l - (long)(l / r) * r, free(val.data);
         }
@@ -1478,9 +1478,9 @@ int main(int argc, char **argv) {
     ch_start_scope(&vars, &logp), readfile(fp, &code, argv[1], NULL, 0, (Value){null}), ch_end_scope(&vars, log);
 
     // log
-    FILE *log_ = fopen("log", "wb");
-    // fprintf(log, "length: %ld\n", code - source);
-    fwrite(source, 1, code - source, log_);
+    // FILE *log_ = fopen("log", "wb");
+    // // fprintf(log, "length: %ld\n", code - source);
+    // fwrite(source, 1, code - source, log_);
 
 
 

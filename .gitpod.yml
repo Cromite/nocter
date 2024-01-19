@@ -1,0 +1,4 @@
+tasks:
+  - name: Install custom VS Code extension
+    command: |
+      code --install-extension ./path/to/your-extension.vsix

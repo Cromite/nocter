@@ -85,18 +85,18 @@ Value valdup(Value val) {
 }
 
 void strcast(Value *val) {
-    char *data;
+    char *data, str[19];
     if (val->obj == null) data = "void";
     else if (val->obj == &integrate) {
         if (*(long *)val->data == 0) data = "0";
         else {
             long num = *(long *)val->data;
-            char str[19], *p = str + 18, minus = 0;
+            char *p = str + 18, minus = 0;
             if (num < 0) minus = 1, num = -num;
-            *p -- = 0;
+            *p = 0;
             while (num != 0) *-- p = (num % 10) + '0', num /= 10;
             if (minus) *-- p = '-';
-            data  = p;
+            data = p;
         }
         free(val->data);
     }
@@ -105,9 +105,9 @@ void strcast(Value *val) {
         else if (isinf(*(double *)val->data)) data = *(double *)val->data > 0 ? "infinity" : "-infinity";
         else {
             long num1 = *(double *)val->data, num2 = (*(double *)val->data - num1) * 1e16;
-            char str[19], *p = str + 18, minus = 0;
+            char *p = str + 18, minus = 0;
             if (num1 < 0) minus = 1, num1 = -num1, num2 = -num2;
-            *p -- = 0;
+            *p = 0;
             if (num2 != 0) {
                 while (num2 % 10 == 0) num2 /= 10;
                 while (num2 != 0) *-- p = (num2 % 10) + '0', num2 /= 10;

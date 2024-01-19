@@ -1,1 +1,1 @@
-puts("hello world")
+puts(String(-2))

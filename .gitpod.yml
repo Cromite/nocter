@@ -5,4 +5,4 @@ tasks:
 
   - name: Set up environment
     command: |
-      export PATH=$PATH:/workspace/bin
+      export PATH=$PATH:./bin

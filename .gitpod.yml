@@ -1,7 +1,7 @@
 tasks:
   - name: Install custom VS Code extension
     command: |
-      code --install-extension ./nocter-0.0.1.vsix
+      code --install-extension /workspace/bin/nocter-0.0.1.vsix
 
   - name: Set up environment
     command: |

@@ -213,7 +213,7 @@ Value ex_code(char **code, Value self, char *md);
 Value ex_inexpr(char **code, Value self) {
     for (;;) {
         Value res = ex_expr(code, self);
-        if (**code == COMMA) (*code) ++, ex_free(res);
+        if (**code == COMMA) (*code) ++;//, ex_free(res);
         else return res;
     }
 }
@@ -272,7 +272,7 @@ Value ex_value(char **code, Value self) {
     else if (**code == GROUP) {
         for (;;) {
             (*code) ++, res = ex_expr(code, self);
-            if (*(*code) == COMMA) ex_free(res);
+            if (*(*code) == COMMA) ;//ex_free(res);
             else break;
         }
         (*code) ++;
@@ -347,8 +347,8 @@ Value ex_value_1(char **code, Value self) {
                     while (*fn ++ != 0);
                 }
                 while (*(*code) ++ != GROUP_E);
-                fn ++;
-
+                fn ++, res = (Value){null};
+                
                 if (*fn == BLOCK) {
                     char md = 0;
                     fn ++;
@@ -359,6 +359,7 @@ Value ex_value_1(char **code, Value self) {
                     fn ++;
                 }
                 else res = ex_inexpr(&fn, self);
+
                 ex_end_scope(&vars, log);
 
                 if (cls) res = self;
@@ -530,7 +531,7 @@ Value ex_expr(char **code, Value self) {
  * 5 static
  */
 Value ex_code(char **code, Value self, char *md) {
-    Value res;
+    Value res = (Value){null};
 
     if (**code == '{') {
         Log log[256], *logp = log;
@@ -629,7 +630,8 @@ Value ex_code(char **code, Value self, char *md) {
 
     else if (**code == RETURN) (*code) ++, res = ex_expr(code, self), (*code) ++, *md = 1;
     else {
-        do ex_free(ex_expr(code, self));
+        // do ex_free(ex_expr(code, self));
+        do ex_expr(code, self);
         while (*(*code)++ == COMMA);
     }
 

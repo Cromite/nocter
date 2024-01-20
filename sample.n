@@ -15,3 +15,34 @@ func print(str: String) {
     puts(str)
 }
 
+/**
+ * class定義
+ */
+class Person {
+    var name: String
+    
+    init(name: String) {
+        self.name = name
+    }
+}
+
+/**
+ * インスタンス
+ */
+var i = Person("山田太郎")
+
+/**
+ * クラス拡張
+ */
+extend Person {
+    var age = 35
+}
+
+// 35
+i.age 
+
+// import文
+import "main.n"
+
+
+print(String(i.age ))

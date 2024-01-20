@@ -85,18 +85,17 @@ Value valdup(Value val) {
 }
 
 void strcast(Value *val) {
-    char *data, str[19];
+    char *data;
     if (val->obj == null) data = "void";
     else if (val->obj == &integrate) {
         if (*(long *)val->data == 0) data = "0";
         else {
             long num = *(long *)val->data;
-            char *p = str + 18, minus = 0;
+            char str[19], minus = 0;
             if (num < 0) minus = 1, num = -num;
-            *p = 0;
-            while (num != 0) *-- p = (num % 10) + '0', num /= 10;
-            if (minus) *-- p = '-';
-            data = p;
+            data = str, data += 18, *data = 0;
+            while (num != 0) *-- data = (num % 10) + '0', num /= 10;
+            if (minus) *-- data = '-';
         }
         free(val->data);
     }
@@ -105,18 +104,17 @@ void strcast(Value *val) {
         else if (isinf(*(double *)val->data)) data = *(double *)val->data > 0 ? "infinity" : "-infinity";
         else {
             long num1 = *(double *)val->data, num2 = (*(double *)val->data - num1) * 1e16;
-            char *p = str + 18, minus = 0;
+            char str[19], minus = 0;
             if (num1 < 0) minus = 1, num1 = -num1, num2 = -num2;
-            *p = 0;
+            data = str, data += 18, *data = 0;
             if (num2 != 0) {
                 while (num2 % 10 == 0) num2 /= 10;
-                while (num2 != 0) *-- p = (num2 % 10) + '0', num2 /= 10;
-                *-- p = '.';
+                while (num2 != 0) *-- data = (num2 % 10) + '0', num2 /= 10;
+                *-- data = '.';
             }
-            if (num1 == 0) *-- p = '0';
-            else while (num1 != 0) *-- p = (num1 % 10) + '0', num1 /= 10;
-            if (minus) *-- p = '-';
-            data  = p;
+            if (num1 == 0) *-- data = '0';
+            else while (num1 != 0) *-- data = (num1 % 10) + '0', num1 /= 10;
+            if (minus) *-- data = '-';
         }
         free(val->data);
     }
@@ -425,7 +423,7 @@ Value ex_value_4(char **code, Value self) {
                 strcast(&res), strcast(&val);
                 int len1 = strlen(res.data), len2 = strlen(val.data);
                 char *str = malloc(sizeof(char) * (len1 + len2 + 1));
-                memcpy(str, res.data, sizeof(char) * len1), memcpy(str + len1, val.data, sizeof(char) * len2), free(res.data), res.data = str;
+                memcpy(str, res.data, sizeof(char) * len1), memcpy(str + len1, val.data, sizeof(char) * len2), *(str + len1 + len2) = 0, free(res.data), res.data = str;
             }
             else if (res.obj == &integrate && val.obj == &integrate) *(long *)res.data = *(long *)res.data + *(long *)val.data;
             else {

@@ -2,4 +2,4 @@
  * $ nocter idnex.n で実行できます。
  */
 
-puts("hello world")
+puts("a" + 3)

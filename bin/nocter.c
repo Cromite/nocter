@@ -956,16 +956,19 @@ Value ch_value(char **ptr, char **code, char *file, Value self) {
     }
     else if (**ptr == '[') error(file, *ptr, "配列は作り途中", 1);
     else if (**ptr == '!') {
+        char *tmp_ptr = *ptr;
         (*ptr) ++, *(*code)++ = NOT, slide(ptr, file, 0), res = ch_value(ptr, code, file, self);
-        if (res.obj != &boolean) error(file, *ptr, "SyntaxError: Invalid operator", 1);
+        if (res.obj != &boolean) error(file, tmp_ptr, "SyntaxError: Invalid operator", 1);
     }
     else if (**ptr == '-') {
+        char *tmp_ptr = *ptr;
         (*ptr) ++, *(*code)++ = MINUS, slide(ptr, file, 0), res = ch_value(ptr, code, file, self);
-        if (res.obj != &integrate && res.obj != &number) error(file, *ptr, "SyntaxError: Invalid operator", 1);
+        if (res.obj != &integrate && res.obj != &number) error(file, tmp_ptr, "SyntaxError: Invalid operator", 1);
     }
     else if (**ptr == '+') {
+        char *tmp_ptr = *ptr;
         (*ptr) ++, *(*code)++ = PLUS, slide(ptr, file, 0), res = ch_value(ptr, code, file, self);
-        if (res.obj != &integrate && res.obj != &number) error(file, *ptr, "SyntaxError: Invalid operator", 1);
+        if (res.obj != &integrate && res.obj != &number) error(file, tmp_ptr, "SyntaxError: Invalid operator", 1);
     }
     else if (**ptr == '}') error(file, *ptr, "SyntaxError: Unmatched '}'", 1);
     else if (**ptr == ')') error(file, *ptr, "SyntaxError: Unmatched ')'", 1);

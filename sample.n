@@ -1,0 +1,17 @@
+/**
+ * 標準出力用の puts 関数のみ標準搭載してます。
+ */
+puts("hello world")
+
+/**
+ * if, while, switch などのステイトメントは開発途中です。
+ */
+
+/**
+ * 関数定義
+ * 戻り値の型は必須ではありません（型推測）
+ */
+func print(str: String) {
+    puts(str)
+}
+

@@ -1,2 +1,2 @@
 # nocter
-nocter programing lenguage
+nocter programming language

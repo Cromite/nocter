@@ -1,2 +1,2 @@
-# nocter
-nocter programming language
+# Nocter
+Nocter Programming Language
